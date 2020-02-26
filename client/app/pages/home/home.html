@@ -35,9 +35,16 @@
   <div class="tile">
     <div class="t-body tb-padding">
       <div class="row">
-      <div class="col-sm-6">
-          <p class="f-500 m-b-20 c-black">Dunzo Updates</p>
-            <li>Do not name your saved with theses patterns. Any such saved query older than 7 days
+      <div class="col-sm">
+        <p class="f-500 m-b-20 c-black" align="center"> Dunzo Updates </p>
+            <ol>
+              <li>
+                Redash is primarily meant as a reporting and exploration tool. It is NOT meant as a way to query
+                raw data and download it as CSV for further processing. Please aim to do all aggregations and slicing
+                and dicing in the query itself. Redash queries will FAIL if you try to download too many rows ~10 lac.
+                Use a LIMIT filter in your queries if you want to explore.
+              </li>
+            <li>Do not name your saved queries with theses patterns. Any such saved query older than 7 days
               will be removed from the system.
               <ul>
               <li>
@@ -54,7 +61,6 @@
               </li>
               </ul>
             </li>
-            <br>
             <li>
               Do add multiple tags to your saved queries. A tag with your name is helpful in filtering queries by user.
             </li>

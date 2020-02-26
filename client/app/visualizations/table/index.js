@@ -12,7 +12,7 @@ import { ColumnTypes } from './utils';
 const ALLOWED_ITEM_PER_PAGE = [5, 10, 15, 20, 25, 50, 100, 150, 200, 250];
 
 const DEFAULT_OPTIONS = {
-  itemsPerPage: 25,
+  itemsPerPage: 50,
 };
 
 function getColumnContentAlignment(type) {

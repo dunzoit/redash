@@ -72,7 +72,6 @@ class QueryTask(object):
             query_result_id = result
         else:
             query_result_id = None
-
         return {
             'id': self._async_result.id,
             'updated_at': updated_at,
@@ -366,6 +365,7 @@ class QueryExecutor(object):
                 error = text_type(e)
 
             data = None
+            logging.debug(e)
             logging.warning('Unexpected error while running query:', exc_info=1)
 
         run_time = time.time() - started_at

@@ -1,5 +1,8 @@
 import logging
 import os
+import csv
+import random
+from pyathena.util import parse_output_location
 
 from redash.query_runner import *
 from redash.settings import parse_boolean
@@ -15,10 +18,10 @@ OPTIONAL_CREDENTIALS = parse_boolean(os.environ.get('ATHENA_OPTIONAL_CREDENTIALS
 try:
     import pyathena
     import boto3
+
     enabled = True
 except ImportError:
     enabled = False
-
 
 _TYPE_MAPPINGS = {
     'boolean': TYPE_BOOLEAN,
@@ -125,7 +128,7 @@ class Athena(BaseQueryRunner):
             schema['order'].insert(2, 'aws_secret_key')
 
         if not OPTIONAL_CREDENTIALS and not ASSUME_ROLE:
-                schema['required'] += ['aws_access_key', 'aws_secret_key']
+            schema['required'] += ['aws_access_key', 'aws_secret_key']
 
         return schema
 
@@ -153,7 +156,7 @@ class Athena(BaseQueryRunner):
                 RoleArn=self.configuration.get('iam_role'),
                 RoleSessionName=role_session_name,
                 ExternalId=self.configuration.get('external_id')
-                )
+            )
             return {
                 'aws_access_key_id': creds['Credentials']['AccessKeyId'],
                 'aws_secret_access_key': creds['Credentials']['SecretAccessKey'],
@@ -219,9 +222,13 @@ class Athena(BaseQueryRunner):
             work_group=self.configuration.get('work_group', 'primary'),
             formatter=SimpleFormatter(),
             **self._get_iam_credentials(user=user)).cursor()
+        cursor.execute(query)
 
+        return self.get_query_result_from_file(cursor, user)
+        # return self.get_query_results_from_cursor(cursor)
+
+    def get_query_results_from_cursor(self, cursor):
         try:
-            cursor.execute(query)
             column_tuples = [(i[0], _TYPE_MAPPINGS.get(i[1], None)) for i in cursor.description]
             columns = self.fetch_columns(column_tuples)
             rows = [dict(zip(([c['name'] for c in columns]), r)) for i, r in enumerate(cursor.fetchall())]
@@ -255,8 +262,70 @@ class Athena(BaseQueryRunner):
                 cursor.cancel()
             error = ex.message
             json_data = None
-
         return json_data, error
+
+    def get_query_result_from_file(self, cursor, user):
+        try:
+            qbytes = None
+            athena_query_results_file = None
+            error = None
+            json_data = None
+            try:
+                athena_query_id = cursor.query_id
+            except AttributeError as e:
+                athena_query_id = "temp_"+str(random.getrandbits(128))
+                logger.debug("Athena Upstream can't get query_id: %s", e)
+            try:
+                athena_output_location = cursor.output_location
+            except Exception as e:
+                error = e.message
+                logger.debug("Output location not found: %s", e)
+                return json_data, error
+
+            bucket, key = parse_output_location(athena_output_location)
+            s3 = boto3.client('s3', **self._get_iam_credentials(user=user))
+            athena_query_results_file = athena_query_id
+            with open(athena_query_results_file, 'wb') as w:
+                s3.download_fileobj(bucket, key, w)
+            with open(athena_query_results_file, 'r+') as f:
+                rows = list(csv.DictReader(f))
+            column_tuples = [(i[0], _TYPE_MAPPINGS.get(i[1], None)) for i in cursor.description]
+            columns = self.fetch_columns(column_tuples)
+            try:
+                qbytes = cursor.data_scanned_in_bytes
+            except AttributeError as e:
+                logger.debug("Athena Upstream can't get data_scanned_in_bytes: %s", e)
+            data = {
+                'columns': columns,
+                'rows': rows,
+                'metadata': {
+                    'data_scanned': qbytes,
+                    'athena_query_id': athena_query_id
+                }
+            }
+            json_data = json_dumps(data, ignore_nan=True)
+        except (KeyboardInterrupt, InterruptException) as e:
+            if cursor.query_id:
+                cursor.cancel()
+            error = "Query cancelled by user. %s", e
+            json_data = None
+        except Exception as ex:
+            if cursor.query_id:
+                cursor.cancel()
+                logger.debug(ex.message)
+            error = ex
+            json_data = None
+        finally:
+            self.remove_file(athena_query_results_file)
+
+        self.remove_file(athena_query_results_file)
+        return json_data, error
+
+    def remove_file(self, athena_query_results_file):
+        try:
+            os.remove(athena_query_results_file)
+        except OSError:
+            logger.debug("No such file with %s exists", athena_query_results_file)
 
 
 register(Athena)
