@@ -307,7 +307,7 @@ class Athena(BaseQueryRunner):
         except (KeyboardInterrupt, InterruptException) as e:
             if cursor.query_id:
                 cursor.cancel()
-            error = "Query cancelled by user. %s", e
+            error = "Query cancelled by user."
             json_data = None
         except Exception as ex:
             if cursor.query_id:
