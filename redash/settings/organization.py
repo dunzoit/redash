@@ -18,8 +18,8 @@ SAML_LOGIN_ENABLED = SAML_METADATA_URL != ""
 
 DATE_FORMAT = os.environ.get("REDASH_DATE_FORMAT", "DD/MM/YY")
 TIME_FORMAT = os.environ.get("REDASH_TIME_FORMAT", "HH:mm")
-INTEGER_FORMAT = os.environ.get("REDASH_INTEGER_FORMAT", "0,0")
-FLOAT_FORMAT = os.environ.get("REDASH_FLOAT_FORMAT", "0,0.00")
+INTEGER_FORMAT = os.environ.get("REDASH_INTEGER_FORMAT", "00")
+FLOAT_FORMAT = os.environ.get("REDASH_FLOAT_FORMAT", "00.00")
 MULTI_BYTE_SEARCH_ENABLED = parse_boolean(os.environ.get("MULTI_BYTE_SEARCH_ENABLED", "false"))
 
 JWT_LOGIN_ENABLED = parse_boolean(os.environ.get("REDASH_JWT_LOGIN_ENABLED", "false"))
