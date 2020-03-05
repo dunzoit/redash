@@ -10,7 +10,7 @@ from redash.utils import JSONEncoder, json_dumps, json_loads
 
 logger = logging.getLogger(__name__)
 
-QUERY_TIMEOUT = os.environ.get('POSTGRES_QUERY_TIMEOUT', '900')
+QUERY_TIMEOUT = os.environ.get('POSTGRES_QUERY_TIMEOUT', '600000')
 
 types_map = {
     20: TYPE_INTEGER,
