@@ -44,7 +44,7 @@
                 and dicing in the query itself. Redash queries will FAIL if you try to download too many rows ~10 lac.
                 Use a LIMIT filter in your queries if you want to explore.
               </li>
-            <li>Do not name your saved queries with theses patterns. Any such saved query older than 7 days
+            <li>Do not name your saved queries with these patterns. Any such saved query older than 7 days
               will be removed from the system.
               <ul>
               <li>
@@ -62,8 +62,15 @@
               </ul>
             </li>
             <li>
-              Do add multiple tags to your saved queries. A tag with your name is helpful in filtering queries by user.
+              Please add multiple tags to your saved queries. A tag with your name is helpful in filtering queries by user.
             </li>
+              <li>
+                There is query timeout of 10 minutes in all postgres datasources. Please write performant queries accordingly.
+              </li>
+              <li>
+                As with any tool, Redash also has some limitations but we have tried to make it as smooth as possible for users.
+                Please provide us with feedback on how we can improve it further.
+              </li>
           </ol>
         </div>
     </div>
