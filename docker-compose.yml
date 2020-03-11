@@ -23,6 +23,7 @@ services:
   worker:
     build: .
     command: dev_worker
+    restart: unless-stopped
     volumes:
       - type: bind
         source: .
@@ -35,11 +36,19 @@ services:
       REDASH_REDIS_URL: "redis://redis:6379/0"
       REDASH_DATABASE_URL: "postgresql://postgres@postgres/postgres"
       QUEUES: "queries,scheduled_queries,celery,schemas"
-      WORKERS_COUNT: 2
+      WORKERS_COUNT: 1
       REDASH_INTEGER_FORMAT: "00"
   redis:
     image: redis:3-alpine
     restart: unless-stopped
+  flower:
+    image: mher/flower
+    container_name: redash_flower
+    environment:
+      CELERY_BROKER_URL: "redis://redis:6379/0"
+      FLOWER_PORT: 8888
+    ports:
+      - 8889:8888
   postgres:
     image: postgres:9.5-alpine
     # The following turns the DB into less durable, but gains significant performance improvements for the tests run (x3

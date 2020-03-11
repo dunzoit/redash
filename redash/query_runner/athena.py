@@ -2,6 +2,8 @@ import logging
 import os
 import csv
 import random
+
+from botocore.exceptions import ClientError
 from pyathena.util import parse_output_location
 
 from redash.query_runner import *
@@ -224,7 +226,7 @@ class Athena(BaseQueryRunner):
             **self._get_iam_credentials(user=user)).cursor()
         cursor.execute(query)
 
-        return self.get_query_result_from_file(cursor, user)
+        return self.get_query_result_from_file(cursor, user, query)
         # return self.get_query_results_from_cursor(cursor)
 
     def get_query_results_from_cursor(self, cursor):
@@ -264,7 +266,7 @@ class Athena(BaseQueryRunner):
             json_data = None
         return json_data, error
 
-    def get_query_result_from_file(self, cursor, user):
+    def get_query_result_from_file(self, cursor, user, query):
         try:
             qbytes = None
             athena_query_results_file = None
@@ -277,9 +279,13 @@ class Athena(BaseQueryRunner):
                 logger.debug("Athena Upstream can't get query_id: %s", e)
             try:
                 athena_output_location = cursor.output_location
+                logger.info(athena_output_location)
             except Exception as e:
                 error = e.message
                 logger.debug("Output location not found: %s", e)
+                return json_data, error
+
+            if not athena_output_location or athena_output_location == '':
                 return json_data, error
 
             bucket, key = parse_output_location(athena_output_location)
@@ -309,6 +315,14 @@ class Athena(BaseQueryRunner):
                 cursor.cancel()
             error = "Query cancelled by user."
             json_data = None
+        except ClientError as e:
+            logger.exception(e)
+            if '404' in e.message and 'HeadObject' in e.message:
+                error = None
+                json_data = json_dumps({}, ignore_nan=True)
+            else:
+                error = e
+                json_data = None
         except Exception as ex:
             if cursor.query_id:
                 cursor.cancel()

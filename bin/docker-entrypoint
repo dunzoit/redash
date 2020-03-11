@@ -2,12 +2,12 @@
 set -e
 
 worker() {
-  WORKERS_COUNT=${WORKERS_COUNT:-2}
+  WORKERS_COUNT=${WORKERS_COUNT:-1}
   QUEUES=${QUEUES:-queries,scheduled_queries,celery,schemas}
   WORKER_EXTRA_OPTIONS=${WORKER_EXTRA_OPTIONS:-}
 
   echo "Starting $WORKERS_COUNT workers for queues: $QUEUES..."
-  exec /usr/local/bin/celery worker --app=redash.worker -c$WORKERS_COUNT -Q$QUEUES -linfo --max-tasks-per-child=10 -Ofair $WORKER_EXTRA_OPTIONS
+  exec /usr/local/bin/celery worker --app=redash.worker -Q$QUEUES -ldebug --max-tasks-per-child=10 -c4 -Ofair $WORKER_EXTRA_OPTIONS
 }
 
 scheduler() {
@@ -21,13 +21,13 @@ scheduler() {
 }
 
 dev_worker() {
-  WORKERS_COUNT=${WORKERS_COUNT:-2}
+  WORKERS_COUNT=${WORKERS_COUNT:-1}
   QUEUES=${QUEUES:-queries,scheduled_queries,celery,schemas}
   SCHEDULE_DB=${SCHEDULE_DB:-celerybeat-schedule}
 
   echo "Starting dev scheduler and $WORKERS_COUNT workers for queues: $QUEUES..."
 
-  exec watchmedo auto-restart --directory=./redash/ --pattern=*.py --recursive -- /usr/local/bin/celery worker --app=redash.worker --beat -s$SCHEDULE_DB -c$WORKERS_COUNT -Q$QUEUES -linfo --max-tasks-per-child=10 -Ofair
+  exec watchmedo auto-restart --directory=./redash/ --pattern=*.py --recursive -- /usr/local/bin/celery worker --app=redash.worker -s$SCHEDULE_DB -c2 -Q$QUEUES -linfo --max-tasks-per-child=10 -Ofair
 }
 
 server() {
