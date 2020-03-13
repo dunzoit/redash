@@ -20,6 +20,7 @@ services:
       REDASH_DATABASE_URL: "postgresql://postgres@postgres/postgres"
       REDASH_RATELIMIT_ENABLED: "false"
       REDASH_INTEGER_FORMAT: "00"
+      NEW_RELIC_CONFIG_FILE: newrelic.ini
   worker:
     build: .
     command: dev_worker
@@ -38,6 +39,7 @@ services:
       QUEUES: "queries,scheduled_queries,celery,schemas"
       WORKERS_COUNT: 1
       REDASH_INTEGER_FORMAT: "00"
+      NEW_RELIC_CONFIG_FILE: newrelic.ini
   redis:
     image: redis:3-alpine
     restart: unless-stopped
