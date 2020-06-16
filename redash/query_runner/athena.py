@@ -3,8 +3,9 @@ import os
 import csv
 import random
 
+from botocore.config import Config
 from botocore.exceptions import ClientError
-from pyathena.util import parse_output_location
+from pyathena.util import parse_output_location, RetryConfig
 
 from redash.query_runner import *
 from redash.settings import parse_boolean
@@ -54,6 +55,14 @@ class Athena(BaseQueryRunner):
     @classmethod
     def name(cls):
         return "Amazon Athena"
+
+    @classmethod
+    def get_retry_config(cls):
+        config = RetryConfig(
+            attempt=2,
+            multiplier=1, max_delay=50
+        )
+        return config
 
     @classmethod
     def configuration_schema(cls):
@@ -223,6 +232,7 @@ class Athena(BaseQueryRunner):
             kms_key=self.configuration.get('kms_key', None),
             work_group=self.configuration.get('work_group', 'primary'),
             formatter=SimpleFormatter(),
+            retry_config=self.get_retry_config(),
             **self._get_iam_credentials(user=user)).cursor()
         cursor.execute(query)
 
@@ -289,7 +299,8 @@ class Athena(BaseQueryRunner):
                 return json_data, error
 
             bucket, key = parse_output_location(athena_output_location)
-            s3 = boto3.client('s3', **self._get_iam_credentials(user=user))
+            s3 = boto3.client('s3',
+                              **self._get_iam_credentials(user=user))
             athena_query_results_file = athena_query_id
             with open(athena_query_results_file, 'wb') as w:
                 s3.download_fileobj(bucket, key, w)

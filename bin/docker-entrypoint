@@ -7,7 +7,7 @@ worker() {
   WORKER_EXTRA_OPTIONS=${WORKER_EXTRA_OPTIONS:-}
 
   echo "Starting $WORKERS_COUNT workers for queues: $QUEUES..."
-  exec NEW_RELIC_CONFIG_FILE=newrelic.ini newrelic-admin run-program /usr/local/bin/celery worker --app=redash.worker -Q$QUEUES -linfo --max-tasks-per-child=10 -c4 -Ofair $WORKER_EXTRA_OPTIONS
+  exec newrelic-admin run-program /usr/local/bin/celery worker --app=redash.worker -Q$QUEUES -linfo --max-tasks-per-child=10 -c4 -Ofair $WORKER_EXTRA_OPTIONS
 }
 
 scheduler() {
