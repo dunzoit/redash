@@ -12,7 +12,7 @@ import { ColumnTypes } from './utils';
 const ALLOWED_ITEM_PER_PAGE = [5, 10, 15, 20, 25, 50, 100, 150, 200, 250];
 
 const DEFAULT_OPTIONS = {
-  itemsPerPage: 25,
+  itemsPerPage: 50,
 };
 
 function getColumnContentAlignment(type) {
@@ -49,8 +49,8 @@ function getDefaultFormatOptions(column) {
     datetime: clientConfig.dateTimeFormat || 'DD/MM/YYYY HH:mm',
   };
   const numberFormat = {
-    integer: clientConfig.integerFormat || '0,0',
-    float: clientConfig.floatFormat || '0,0.00',
+    integer: clientConfig.integerFormat || '00',
+    float: clientConfig.floatFormat || '00.00',
   };
   return {
     dateTimeFormat: dateTimeFormat[column.type],

@@ -16,7 +16,7 @@ celerybeat-schedule*
 _build
 .vscode
 .env
-
+.log
 dump.rdb
 
 node_modules

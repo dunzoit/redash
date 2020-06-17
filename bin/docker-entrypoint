@@ -2,12 +2,12 @@
 set -e
 
 worker() {
-  WORKERS_COUNT=${WORKERS_COUNT:-2}
+  WORKERS_COUNT=${WORKERS_COUNT:-1}
   QUEUES=${QUEUES:-queries,scheduled_queries,celery,schemas}
   WORKER_EXTRA_OPTIONS=${WORKER_EXTRA_OPTIONS:-}
 
   echo "Starting $WORKERS_COUNT workers for queues: $QUEUES..."
-  exec /usr/local/bin/celery worker --app=redash.worker -c$WORKERS_COUNT -Q$QUEUES -linfo --max-tasks-per-child=10 -Ofair $WORKER_EXTRA_OPTIONS
+  exec newrelic-admin run-program /usr/local/bin/celery worker --app=redash.worker -Q$QUEUES -linfo --max-tasks-per-child=10 -c4 -Ofair $WORKER_EXTRA_OPTIONS
 }
 
 scheduler() {
@@ -17,24 +17,24 @@ scheduler() {
 
   echo "Starting scheduler and $WORKERS_COUNT workers for queues: $QUEUES..."
 
-  exec /usr/local/bin/celery worker --app=redash.worker --beat -s$SCHEDULE_DB -c$WORKERS_COUNT -Q$QUEUES -linfo --max-tasks-per-child=10 -Ofair
+  exec newrelic-admin run-program /usr/local/bin/celery worker --app=redash.worker --beat -s$SCHEDULE_DB -c$WORKERS_COUNT -Q$QUEUES -linfo --max-tasks-per-child=10 -Ofair
 }
 
 dev_worker() {
-  WORKERS_COUNT=${WORKERS_COUNT:-2}
+  WORKERS_COUNT=${WORKERS_COUNT:-1}
   QUEUES=${QUEUES:-queries,scheduled_queries,celery,schemas}
   SCHEDULE_DB=${SCHEDULE_DB:-celerybeat-schedule}
 
   echo "Starting dev scheduler and $WORKERS_COUNT workers for queues: $QUEUES..."
 
-  exec watchmedo auto-restart --directory=./redash/ --pattern=*.py --recursive -- /usr/local/bin/celery worker --app=redash.worker --beat -s$SCHEDULE_DB -c$WORKERS_COUNT -Q$QUEUES -linfo --max-tasks-per-child=10 -Ofair
+  exec newrelic-admin run-program /usr/local/bin/celery worker --app=redash.worker -s$SCHEDULE_DB -c2 -Q$QUEUES -linfo --max-tasks-per-child=10 -Ofair
 }
 
 server() {
   # Recycle gunicorn workers every n-th request. See http://docs.gunicorn.org/en/stable/settings.html#max-requests for more details.
   MAX_REQUESTS=${MAX_REQUESTS:-1000}
   MAX_REQUESTS_JITTER=${MAX_REQUESTS_JITTER:-100}
-  exec /usr/local/bin/gunicorn -b 0.0.0.0:5000 --name redash -w${REDASH_WEB_WORKERS:-4} redash.wsgi:app --max-requests $MAX_REQUESTS --max-requests-jitter $MAX_REQUESTS_JITTER
+  exec newrelic-admin run-program /usr/local/bin/gunicorn -b 0.0.0.0:5000 --name redash -w${REDASH_WEB_WORKERS:-4} redash.wsgi:app --max-requests $MAX_REQUESTS --max-requests-jitter $MAX_REQUESTS_JITTER --timeout 65
 }
 
 create_db() {

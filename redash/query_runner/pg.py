@@ -10,6 +10,8 @@ from redash.utils import JSONEncoder, json_dumps, json_loads
 
 logger = logging.getLogger(__name__)
 
+QUERY_TIMEOUT = os.environ.get('POSTGRES_QUERY_TIMEOUT', '600000')
+
 types_map = {
     20: TYPE_INTEGER,
     21: TYPE_INTEGER,
@@ -167,6 +169,7 @@ class PostgreSQL(BaseSQLQueryRunner):
         return schema.values()
 
     def _get_connection(self):
+        statement_timeout = '-c statement_timeout={postgres_query_timeout}'.format(postgres_query_timeout=QUERY_TIMEOUT)
         connection = psycopg2.connect(
             user=self.configuration.get('user'),
             password=self.configuration.get('password'),
@@ -174,7 +177,8 @@ class PostgreSQL(BaseSQLQueryRunner):
             port=self.configuration.get('port'),
             dbname=self.configuration.get('dbname'),
             sslmode=self.configuration.get('sslmode'),
-            async_=True)
+            async_=True,
+            options=statement_timeout)
 
         return connection
 
