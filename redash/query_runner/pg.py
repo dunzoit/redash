@@ -17,6 +17,9 @@ logger = logging.getLogger(__name__)
 QUERY_TIMEOUT = os.environ.get('POSTGRES_QUERY_TIMEOUT', '600000')
 
 
+try:
+    import boto3
+
     IAM_ENABLED = True
 except ImportError:
     IAM_ENABLED = False
@@ -191,7 +194,6 @@ class PostgreSQL(BaseSQLQueryRunner):
         results = json_loads(results)
 
         build_schema(results, schema)
-                                             row['table_name'])
 
     def _get_tables(self, schema):
         """
@@ -237,13 +239,14 @@ class PostgreSQL(BaseSQLQueryRunner):
 
     def _get_connection(self):
         statement_timeout = '-c statement_timeout={postgres_query_timeout}'.format(postgres_query_timeout=QUERY_TIMEOUT)
+        self.ssl_config = _get_ssl_config(self.configuration)
         connection = psycopg2.connect(
             user=self.configuration.get("user"),
             password=self.configuration.get("password"),
             host=self.configuration.get("host"),
             port=self.configuration.get("port"),
             dbname=self.configuration.get("dbname"),
-            async=True,
+            async_=True,
             options=statement_timeout,
             **self.ssl_config)
 
@@ -270,9 +273,7 @@ class PostgreSQL(BaseSQLQueryRunner):
 
                 data = {"columns": columns, "rows": rows}
                 error = None
-                json_data = json_dumps(data,
-                                       ignore_nan=True,
-                                       cls=PostgreSQLJSONEncoder)
+                json_data = json_dumps(data, ignore_nan=True, cls=PostgreSQLJSONEncoder)
             else:
                 error = "Query completed but it returned no data."
                 json_data = None
@@ -291,7 +292,6 @@ class PostgreSQL(BaseSQLQueryRunner):
 
         return json_data, error
 
-
 class Redshift(PostgreSQL):
 
     @classmethod
@@ -304,8 +304,6 @@ class Redshift(PostgreSQL):
 
     def _get_connection(self):
         self.ssl_config = {}
-                                        './files/redshift-ca-bundle.crt')
-
         sslrootcert_path = os.path.join(
             os.path.dirname(__file__), "./files/redshift-ca-bundle.crt"
         )
@@ -355,11 +353,10 @@ class Redshift(PostgreSQL):
                 "adhoc_query_group",
                 "scheduled_query_group",
             ],
-            "order": ['host', 'port', 'user', 'password', 'dbname', 'sslmode', 'adhoc_query_group', 'scheduled_query_group'],
             "required": ["dbname", "user", "password", "host", "port"],
             "secret": ["password"],
         }
-        
+
     def annotate_query(self, query, metadata):
         annotated = super(Redshift, self).annotate_query(query, metadata)
 

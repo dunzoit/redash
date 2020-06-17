@@ -104,18 +104,20 @@ def serialize_query_result_to_xlsx(query_result):
 
     query_data = query_result.data
     book = xlsxwriter.Workbook(output, {"constant_memory": True})
-        sheet = book.add_worksheet("result")
+    sheet = book.add_worksheet("result")
 
-        column_names = []
+    column_names = []
     for c, col in enumerate(query_data["columns"]):
         sheet.write(0, c, col["name"])
         column_names.append(col["name"])
 
     for r, row in enumerate(query_data["rows"]):
         for c, name in enumerate(column_names):
-                v = row.get(name)
+            v = row.get(name)
             if isinstance(v, (dict, list)):
                 v = str(v)
-                sheet.write(r + 1, c, v)
+            sheet.write(r + 1, c, v)
+
+    book.close()
 
     return output.getvalue()

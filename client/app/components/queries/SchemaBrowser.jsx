@@ -86,14 +86,15 @@ function applyFilter(schema, filterString) {
   }
 
   // Single word: matches table or column
+  // Changing implementation to match only table
   if (filters.length === 1) {
     const nameFilter = filters[0];
-    const columnFilter = filters[0];
+    // const columnFilter = filters[0];
     return filter(
       schema,
       item =>
-        includes(item.name.toLowerCase(), nameFilter) ||
-        some(item.columns, column => includes(column.toLowerCase(), columnFilter))
+        includes(item.name.toLowerCase(), nameFilter)
+        // || some(item.columns, column => includes(column.toLowerCase(), columnFilter))
     );
   }
 

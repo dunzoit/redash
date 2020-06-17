@@ -36,6 +36,7 @@ def embed(query_id, visualization_id, org_slug=None):
 @login_required
 @csp_allows_embeding
 def public_dashboard(token, org_slug=None):
+    is_public_access_allowed()
     if current_user.is_api_user():
         dashboard = current_user.object
     else:

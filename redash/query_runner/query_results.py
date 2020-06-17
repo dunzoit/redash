@@ -31,7 +31,6 @@ def extract_query_ids(query):
 
 def extract_cached_query_ids(query):
     queries = re.findall(r"(?:join|from)\s+cached_query_(\d+)", query, re.IGNORECASE)
-                         re.IGNORECASE)
     return [int(q) for q in queries]
 
 
@@ -45,7 +44,6 @@ def _load_query(user, query_id):
     # We should merge it so it's consistent.
     if not has_access(query.data_source, user, view_only):
         raise PermissionError("You do not have access to query id {}.".format(query.id))
-            query.id))
 
     return query
 
@@ -56,24 +54,20 @@ def get_query_results(user, query_id, bring_from_cache):
         if query.latest_query_data_id is not None:
             results = query.latest_query_data.data
         else:
-            raise Exception("No cached result available for query {}.".format(
-                query.id))
+            raise Exception("No cached result available for query {}.".format(query.id))
     else:
         results, error = query.data_source.query_runner.run_query(
             query.query_text, user
         )
         if error:
-            raise Exception("Failed loading results for query id {}.".format(
+            raise Exception("Failed loading results for query id {}.".format(query.id))
         else:
             results = json_loads(results)
 
     return results
 
 
-def create_tables_from_query_ids(user,
-                                 connection,
-                                 query_ids,
-                                 cached_query_ids=[]):
+def create_tables_from_query_ids(user, connection, query_ids, cached_query_ids=[]):
     for query_id in set(cached_query_ids):
         results = get_query_results(user, query_id, True)
         table_name = "cached_query_{query_id}".format(query_id=query_id)
@@ -140,8 +134,7 @@ class Results(BaseQueryRunner):
 
         query_ids = extract_query_ids(query)
         cached_query_ids = extract_cached_query_ids(query)
-        create_tables_from_query_ids(user, connection, query_ids,
-                                     cached_query_ids)
+        create_tables_from_query_ids(user, connection, query_ids, cached_query_ids)
 
         cursor = connection.cursor()
 

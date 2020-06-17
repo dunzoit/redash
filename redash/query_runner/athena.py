@@ -14,6 +14,7 @@ from redash.utils import json_dumps, json_loads
 logger = logging.getLogger(__name__)
 ANNOTATE_QUERY = parse_boolean(os.environ.get("ATHENA_ANNOTATE_QUERY", "true"))
 ANNOTATE_QUERY_FOR_DML = parse_boolean(os.environ.get('ATHENA_ANNOTATE_QUERY_FOR_DML', 'true'))
+SHOW_EXTRA_SETTINGS = parse_boolean(
     os.environ.get("ATHENA_SHOW_EXTRA_SETTINGS", "true")
 )
 ASSUME_ROLE = parse_boolean(os.environ.get("ATHENA_ASSUME_ROLE", "false"))
@@ -164,7 +165,7 @@ class Athena(BaseQueryRunner):
 
     def _get_iam_credentials(self, user=None):
         if ASSUME_ROLE:
-            role_session_name = "redash" if user is None else user.email
+            role_session_name = "redash"
             sts = boto3.client("sts")
             creds = sts.assume_role(
                 RoleArn=self.configuration.get("iam_role"),
@@ -198,12 +199,12 @@ class Athena(BaseQueryRunner):
                     table_name = "%s.%s" % (database["Name"], table["Name"])
                     if table_name not in schema:
                         column = [
-                            columns["Name"]
+                            f"{columns['Name']} ({columns['Type']})"
                             for columns in table["StorageDescriptor"]["Columns"]
                         ]
                         schema[table_name] = {"name": table_name, "columns": column}
                         for partition in table.get("PartitionKeys", []):
-                            schema[table_name]["columns"].append(partition["Name"])
+                            schema[table_name]["columns"].insert(0, f"{partition['Name']} --Partition key--")
         return list(schema.values())
 
     def get_schema(self, get_stats=False):
@@ -239,6 +240,7 @@ class Athena(BaseQueryRunner):
             work_group=self.configuration.get("work_group", "primary"),
             formatter=SimpleFormatter(),
             retry_config=self.get_retry_config(),
+            **self._get_iam_credentials(user=user)
         ).cursor()
         cursor.execute(query)
 
@@ -321,13 +323,15 @@ class Athena(BaseQueryRunner):
                 qbytes = cursor.data_scanned_in_bytes
             except AttributeError as e:
                 logger.debug("Athena Upstream can't get data_scanned_in_bytes: %s", e)
+            price = self.configuration.get("cost_per_tb", 5)
             data = {
-                'columns': columns,
-                'rows': rows,
-                'metadata': {
-                    'data_scanned': qbytes,
-                    'athena_query_id': athena_query_id
-                }
+                "columns": columns,
+                "rows": rows,
+                "metadata": {
+                    "data_scanned": qbytes,
+                    "athena_query_id": athena_query_id,
+                    "query_cost": price * qbytes * 10e-12,
+                },
             }
             json_data = json_dumps(data, ignore_nan=True)
         except (KeyboardInterrupt, InterruptException) as e:
@@ -337,7 +341,7 @@ class Athena(BaseQueryRunner):
             json_data = None
         except ClientError as e:
             logger.exception(e)
-            if '404' in e.message and 'HeadObject' in e.message:
+            if '404' in e.response and 'HeadObject' in e.response:
                 error = None
                 json_data = json_dumps({}, ignore_nan=True)
             else:
@@ -346,7 +350,7 @@ class Athena(BaseQueryRunner):
         except Exception as ex:
             if cursor.query_id:
                 cursor.cancel()
-                logger.debug(ex.message)
+                logger.debug(ex.__str__())
             error = ex
             json_data = None
         finally:
@@ -355,7 +359,8 @@ class Athena(BaseQueryRunner):
         self.remove_file(athena_query_results_file)
         return json_data, error
 
-    def remove_file(self, athena_query_results_file):
+    @staticmethod
+    def remove_file(athena_query_results_file):
         try:
             os.remove(athena_query_results_file)
         except OSError:

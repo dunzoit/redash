@@ -161,7 +161,7 @@ function Home() {
         <EmptyState
           header="Welcome to Redash 👋"
           description="Connect to any data source, easily visualize and share your data"
-          illustration="dashboard"
+          illustration="Thanks!"
           helpLink="https://redash.io/help/user-guide/getting-started"
           showDashboardStep
           showInviteStep

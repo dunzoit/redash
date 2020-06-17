@@ -55,10 +55,16 @@ export default function QueryExecutionMetadata({
         </span>
         {queryResultData.metadata.data_scanned && (
           <span className="m-l-5">
-            Data Scanned
+            Data Scanned:
             <strong>{prettySize(queryResultData.metadata.data_scanned)}</strong>
           </span>
         )}
+        {queryResultData.metadata.query_cost && (
+        <span className="m-l-5">
+            Query cost:
+            <strong>{queryResultData.metadata.query_cost} $</strong>
+          </span>
+      )}
       </span>
       <div>
         <span className="m-r-10">

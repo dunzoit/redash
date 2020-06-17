@@ -2,7 +2,7 @@ import _ from "lodash";
 import { visualizationsSettings } from "@/visualizations/visualizationsSettings";
 
 const DEFAULT_OPTIONS = {
-  itemsPerPage: 25,
+  itemsPerPage: 50,
   paginationSize: "default", // not editable through Editor
 };
 
