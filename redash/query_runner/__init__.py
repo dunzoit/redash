@@ -139,7 +139,7 @@ class BaseQueryRunner(object):
             return query
 
         annotation = ", ".join(["{}: {}".format(k, v) for k, v in metadata.items()])
-        annotated_query = "/* {} */ {}".format(annotation, query)
+        annotated_query = "/* {} */ {}\n".format(annotation, query)
         return annotated_query
 
     def test_connection(self):
