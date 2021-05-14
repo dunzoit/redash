@@ -10,6 +10,7 @@ import requests
 
 from redash import settings
 from redash.query_runner import *
+from redash.settings import parse_boolean
 from redash.utils import json_dumps, json_loads
 
 logger = logging.getLogger(__name__)
@@ -26,6 +27,7 @@ except ImportError:
     enabled = False
 
 BIGQUERY_SCHEMA_PROJECT_ID = os.environ.get('BIGQUERY_SCHEMA_PROJECT_ID', None)
+ANNOTATE_QUERY = parse_boolean(os.environ.get("BIGQUERY_ANNOTATE_QUERY", "true"))
 
 types_map = {
     "INTEGER": TYPE_INTEGER,
@@ -88,7 +90,7 @@ def _get_query_results(jobs, project_id, location, job_id, start_index):
 
 
 class BigQuery(BaseQueryRunner):
-    should_annotate_query = False
+    should_annotate_query = ANNOTATE_QUERY
     noop_query = "SELECT 1"
 
     @classmethod
